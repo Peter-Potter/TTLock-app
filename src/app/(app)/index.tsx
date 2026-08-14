@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../context/auth'
+import { useTheme } from '../../context/theme'
 import {
   checkTTLockConnection,
   disconnectTTLock,
@@ -33,6 +34,7 @@ const showAlert = (title: string, message: string) => {
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth()
+  const { isDark, toggleTheme, colors } = useTheme()
 
   const [checkingConnection, setCheckingConnection] = useState(true)
   const [tokenInfo, setTokenInfo] = useState<TTLockTokenInfo | null>(null)
@@ -195,7 +197,7 @@ export default function HomeScreen() {
   const userInitial = (user?.email?.[0] || 'U').toUpperCase()
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -205,28 +207,74 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* User Profile Bar */}
-          <View style={styles.headerCard}>
+          {/* User Profile Bar & Theme Switcher */}
+          <View
+            style={[
+              styles.headerCard,
+              {
+                backgroundColor: colors.headerCardBg,
+                borderColor: colors.headerCardBorder,
+              },
+            ]}
+          >
             <View style={styles.userInfoRow}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>{userInitial}</Text>
+              <View
+                style={[
+                  styles.avatarCircle,
+                  {
+                    backgroundColor: colors.primaryBadgeBg,
+                    borderColor: colors.primaryBadgeBorder,
+                  },
+                ]}
+              >
+                <Text style={[styles.avatarText, { color: colors.primary }]}>{userInitial}</Text>
               </View>
               <View style={styles.userTextContainer}>
-                <Text style={styles.greetingText}>Logged in as host</Text>
-                <Text style={styles.emailText} numberOfLines={1}>
+                <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Logged in as host</Text>
+                <Text style={[styles.emailText, { color: colors.textPrimary }]} numberOfLines={1}>
                   {user?.email || 'Authenticated User'}
                 </Text>
               </View>
+
+              {/* Theme Toggle Button */}
               <TouchableOpacity
-                style={styles.signOutButton}
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.iconButtonBg,
+                    borderColor: colors.iconButtonBorder,
+                    marginRight: 8,
+                  },
+                ]}
+                onPress={toggleTheme}
+                hitSlop={8}
+                accessibilityLabel="Toggle Theme"
+              >
+                <Ionicons
+                  name={isDark ? 'sunny' : 'moon'}
+                  size={20}
+                  color={isDark ? '#FBBF24' : '#64748B'}
+                />
+              </TouchableOpacity>
+
+              {/* Sign Out Button */}
+              <TouchableOpacity
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.errorBg,
+                    borderColor: colors.errorBorder,
+                  },
+                ]}
                 onPress={handleSignOut}
                 disabled={signingOut}
                 hitSlop={8}
+                accessibilityLabel="Sign Out"
               >
                 {signingOut ? (
-                  <ActivityIndicator size="small" color="#DC2626" />
+                  <ActivityIndicator size="small" color={colors.error} />
                 ) : (
-                  <Ionicons name="log-out-outline" size={22} color="#DC2626" />
+                  <Ionicons name="log-out-outline" size={20} color={colors.error} />
                 )}
               </TouchableOpacity>
             </View>
@@ -234,36 +282,72 @@ export default function HomeScreen() {
 
           {checkingConnection ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2563EB" />
-              <Text style={styles.loadingText}>Checking TTLock connection...</Text>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                Checking TTLock connection...
+              </Text>
             </View>
           ) : !tokenInfo ? (
             /* ================= NOT CONNECTED STATE (DIRECT IN-APP LINK) ================= */
-            <View style={styles.connectCard}>
-              <View style={styles.connectIconBadge}>
-                <Ionicons name="keypad-outline" size={32} color="#2563EB" />
+            <View
+              style={[
+                styles.connectCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.connectIconBadge,
+                  {
+                    backgroundColor: colors.primaryBadgeBg,
+                    borderColor: colors.primaryBadgeBorder,
+                  },
+                ]}
+              >
+                <Ionicons name="keypad-outline" size={32} color={colors.primary} />
               </View>
-              <Text style={styles.connectTitle}>Connect TTLock Account</Text>
-              <Text style={styles.connectDescription}>
+              <Text style={[styles.connectTitle, { color: colors.textPrimary }]}>
+                Connect TTLock Account
+              </Text>
+              <Text style={[styles.connectDescription, { color: colors.textSecondary }]}>
                 Enter the credentials you use in the official TTLock mobile app to link your locks and issue passcodes.
               </Text>
 
               {linkError && (
-                <View style={styles.errorContainer}>
-                  <Ionicons name="alert-circle" size={20} color="#DC2626" style={styles.errorIcon} />
-                  <Text style={styles.errorText}>{linkError}</Text>
+                <View
+                  style={[
+                    styles.errorContainer,
+                    {
+                      backgroundColor: colors.errorBg,
+                      borderColor: colors.errorBorder,
+                    },
+                  ]}
+                >
+                  <Ionicons name="alert-circle" size={20} color={colors.error} style={styles.errorIcon} />
+                  <Text style={[styles.errorText, { color: colors.errorText }]}>{linkError}</Text>
                 </View>
               )}
 
               {/* TTLock Username */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>TTLock Account / Email / Phone</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="person-outline" size={20} color="#64748B" style={styles.inputIcon} />
+                <Text style={[styles.label, { color: colors.textPrimary }]}>TTLock Account / Email / Phone</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.inputBorder,
+                    },
+                  ]}
+                >
+                  <Ionicons name="person-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     placeholder="e.g. your_ttlock_username"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={colors.textMuted}
                     value={ttlockUsername}
                     onChangeText={setTtlockUsername}
                     autoCapitalize="none"
@@ -274,13 +358,21 @@ export default function HomeScreen() {
 
               {/* TTLock Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>TTLock Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#64748B" style={styles.inputIcon} />
+                <Text style={[styles.label, { color: colors.textPrimary }]}>TTLock Password</Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.inputBorder,
+                    },
+                  ]}
+                >
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     placeholder="Enter TTLock password"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={colors.textMuted}
                     value={ttlockPassword}
                     onChangeText={setTtlockPassword}
                     secureTextEntry={!showTtlockPassword}
@@ -295,14 +387,18 @@ export default function HomeScreen() {
                     <Ionicons
                       name={showTtlockPassword ? 'eye-off-outline' : 'eye-outline'}
                       size={20}
-                      color="#64748B"
+                      color={colors.inputIcon}
                     />
                   </Pressable>
                 </View>
               </View>
 
               <TouchableOpacity
-                style={[styles.primaryButton, linking && styles.buttonDisabled]}
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                  linking && styles.buttonDisabled,
+                ]}
                 onPress={handleLinkAccount}
                 disabled={linking}
                 activeOpacity={0.8}
@@ -324,40 +420,68 @@ export default function HomeScreen() {
             /* ================= CONNECTED STATE (LOCK DASHBOARD) ================= */
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Smart Lock Dashboard</Text>
-                <View style={styles.connectedBadge}>
-                  <View style={styles.onlineDot} />
-                  <Text style={styles.connectedText}>TTLock Linked</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Smart Lock Dashboard</Text>
+                <View
+                  style={[
+                    styles.connectedBadge,
+                    {
+                      backgroundColor: colors.successBg,
+                      borderColor: colors.successBorder,
+                    },
+                  ]}
+                >
+                  <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                  <Text style={[styles.connectedText, { color: colors.successText }]}>TTLock Linked</Text>
                 </View>
               </View>
 
-              <View style={styles.card}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+              >
                 <View style={styles.lockInfoRow}>
-                  <View style={styles.lockIconContainer}>
-                    <Ionicons name="keypad" size={26} color="#2563EB" />
+                  <View
+                    style={[
+                      styles.lockIconContainer,
+                      {
+                        backgroundColor: colors.primaryBadgeBg,
+                        borderColor: colors.primaryBadgeBorder,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="keypad" size={26} color={colors.primary} />
                   </View>
                   <View style={styles.lockDetails}>
-                    <Text style={styles.lockName}>Main Entrance Lock</Text>
-                    <Text style={styles.lockId}>Lock ID: 26242093</Text>
+                    <Text style={[styles.lockName, { color: colors.textPrimary }]}>Main Entrance Lock</Text>
+                    <Text style={[styles.lockId, { color: colors.textSecondary }]}>Lock ID: 26242093</Text>
                   </View>
                 </View>
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
                 <View style={styles.specGrid}>
                   <View style={styles.specItem}>
-                    <Text style={styles.specLabel}>TTLock UID</Text>
-                    <Text style={styles.specValue}>{tokenInfo.ttlock_uid || 'Linked'}</Text>
+                    <Text style={[styles.specLabel, { color: colors.textSecondary }]}>TTLock UID</Text>
+                    <Text style={[styles.specValue, { color: colors.textPrimary }]}>{tokenInfo.ttlock_uid || 'Linked'}</Text>
                   </View>
                   <View style={styles.specItem}>
-                    <Text style={styles.specLabel}>Passcode Type</Text>
-                    <Text style={styles.specValue}>24-Hour Period</Text>
+                    <Text style={[styles.specLabel, { color: colors.textSecondary }]}>Passcode Type</Text>
+                    <Text style={[styles.specValue, { color: colors.textPrimary }]}>24-Hour Period</Text>
                   </View>
                 </View>
 
                 {/* Passcode Generation Action */}
                 <TouchableOpacity
-                  style={[styles.generateButton, generating && styles.buttonDisabled]}
+                  style={[
+                    styles.generateButton,
+                    { backgroundColor: colors.primary },
+                    generating && styles.buttonDisabled,
+                  ]}
                   onPress={handleGeneratePasscode}
                   disabled={generating}
                   activeOpacity={0.8}
@@ -378,18 +502,34 @@ export default function HomeScreen() {
 
               {/* Generated Passcode Result Card */}
               {passcode && (
-                <View style={styles.resultCard}>
+                <View
+                  style={[
+                    styles.resultCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.successBorder,
+                    },
+                  ]}
+                >
                   <View style={styles.resultHeader}>
-                    <Ionicons name="checkmark-circle" size={22} color="#059669" />
-                    <Text style={styles.resultTitle}>Passcode Ready</Text>
+                    <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+                    <Text style={[styles.resultTitle, { color: colors.successText }]}>Passcode Ready</Text>
                   </View>
 
-                  <View style={styles.passcodeBox}>
-                    <Text style={styles.passcodeCode}>{passcode}</Text>
+                  <View
+                    style={[
+                      styles.passcodeBox,
+                      {
+                        backgroundColor: colors.successBg,
+                        borderColor: colors.successBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.passcodeCode, { color: colors.successText }]}>{passcode}</Text>
                   </View>
 
                   {passcodeExpiry && (
-                    <Text style={styles.expiryText}>Valid until: {passcodeExpiry}</Text>
+                    <Text style={[styles.expiryText, { color: colors.textSecondary }]}>Valid until: {passcodeExpiry}</Text>
                   )}
                 </View>
               )}
@@ -400,8 +540,8 @@ export default function HomeScreen() {
                 onPress={handleDisconnect}
                 activeOpacity={0.7}
               >
-                <Ionicons name="unlink-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
-                <Text style={styles.disconnectButtonText}>Unlink TTLock Account</Text>
+                <Ionicons name="unlink-outline" size={16} color={colors.error} style={{ marginRight: 6 }} />
+                <Text style={[styles.disconnectButtonText, { color: colors.error }]}>Unlink TTLock Account</Text>
               </TouchableOpacity>
             </>
           )}
@@ -414,7 +554,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -422,13 +561,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -442,9 +579,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -452,30 +587,25 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563EB',
   },
   userTextContainer: {
     flex: 1,
   },
   greetingText: {
     fontSize: 12,
-    color: '#64748B',
     fontWeight: '500',
   },
   emailText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0F172A',
   },
-  signOutButton: {
+  iconButton: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FEE2E2',
   },
   loadingContainer: {
     paddingVertical: 60,
@@ -484,16 +614,13 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 14,
-    color: '#64748B',
     fontSize: 14,
   },
   connectCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -504,9 +631,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -515,13 +640,11 @@ const styles = StyleSheet.create({
   connectTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0F172A',
     marginBottom: 8,
     textAlign: 'center',
   },
   connectDescription: {
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
@@ -529,9 +652,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
     borderRadius: 10,
     padding: 12,
     marginBottom: 16,
@@ -542,7 +663,6 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 13,
-    color: '#B91C1C',
     lineHeight: 18,
   },
   inputGroup: {
@@ -551,16 +671,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#334155',
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
     height: 48,
   },
@@ -570,21 +687,18 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#0F172A',
     height: '100%',
   },
   eyeIconButton: {
     padding: 4,
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
     borderRadius: 12,
     height: 48,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -613,37 +727,30 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
   },
   connectedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
   },
   onlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
     marginRight: 5,
   },
   connectedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#047857',
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -658,12 +765,10 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
   },
   lockDetails: {
     flex: 1,
@@ -671,16 +776,13 @@ const styles = StyleSheet.create({
   lockName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
     marginBottom: 2,
   },
   lockId: {
     fontSize: 13,
-    color: '#64748B',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginVertical: 16,
   },
   specGrid: {
@@ -693,21 +795,17 @@ const styles = StyleSheet.create({
   },
   specLabel: {
     fontSize: 12,
-    color: '#64748B',
     marginBottom: 4,
   },
   specValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#334155',
   },
   generateButton: {
-    backgroundColor: '#2563EB',
     borderRadius: 12,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -719,12 +817,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
-    shadowColor: '#059669',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -740,29 +836,24 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#065F46',
     marginLeft: 6,
   },
   passcodeBox: {
-    backgroundColor: '#F0FDF4',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderWidth: 2,
-    borderColor: '#86EFAC',
     borderStyle: 'dashed',
     marginVertical: 8,
   },
   passcodeCode: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#047857',
     letterSpacing: 4,
     textAlign: 'center',
   },
   expiryText: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 6,
   },
   disconnectButton: {
@@ -772,7 +863,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   disconnectButtonText: {
-    color: '#DC2626',
     fontSize: 14,
     fontWeight: '600',
   },

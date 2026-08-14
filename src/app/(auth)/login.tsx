@@ -14,9 +14,11 @@ import {
 import { Link } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../context/auth'
+import { useTheme } from '../../context/theme'
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
+  const { isDark, toggleTheme, colors } = useTheme()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -43,7 +45,6 @@ export default function LoginScreen() {
       if (error) {
         setErrorMessage(error.message || 'Invalid email or password.')
       }
-      // On success, the root auth listener will automatically transition to /(app)
     } catch (err: any) {
       setErrorMessage(err?.message || 'An unexpected error occurred. Please try again.')
     } finally {
@@ -53,9 +54,31 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.keyboardContainer}
+      style={[styles.keyboardContainer, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {/* Top Floating Theme Switcher */}
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={[
+            styles.themeToggle,
+            {
+              backgroundColor: colors.iconButtonBg,
+              borderColor: colors.iconButtonBorder,
+            },
+          ]}
+          onPress={toggleTheme}
+          hitSlop={8}
+          accessibilityLabel="Toggle Theme"
+        >
+          <Ionicons
+            name={isDark ? 'sunny' : 'moon'}
+            size={18}
+            color={isDark ? '#FBBF24' : '#64748B'}
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -63,31 +86,65 @@ export default function LoginScreen() {
       >
         {/* Brand Header */}
         <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <Ionicons name="lock-closed" size={36} color="#2563EB" />
+          <View
+            style={[
+              styles.logoBadge,
+              {
+                backgroundColor: colors.primaryBadgeBg,
+                borderColor: colors.primaryBadgeBorder,
+              },
+            ]}
+          >
+            <Ionicons name="lock-closed" size={36} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to manage and generate TTLock passcodes</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Welcome Back</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Sign in to manage and generate TTLock passcodes
+          </Text>
         </View>
 
         {/* Card Form */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+        >
           {errorMessage && (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={20} color="#DC2626" style={styles.errorIcon} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+            <View
+              style={[
+                styles.errorContainer,
+                {
+                  backgroundColor: colors.errorBg,
+                  borderColor: colors.errorBorder,
+                },
+              ]}
+            >
+              <Ionicons name="alert-circle" size={20} color={colors.error} style={styles.errorIcon} />
+              <Text style={[styles.errorText, { color: colors.errorText }]}>{errorMessage}</Text>
             </View>
           )}
 
           {/* Email Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Email Address</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <Ionicons name="mail-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="name@example.com"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -101,13 +158,21 @@ export default function LoginScreen() {
 
           {/* Password Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <Ionicons name="lock-closed-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="Enter your password"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -123,7 +188,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#64748B"
+                  color={colors.inputIcon}
                 />
               </Pressable>
             </View>
@@ -131,7 +196,11 @@ export default function LoginScreen() {
 
           {/* Sign In Action Button */}
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: colors.primary },
+              loading && styles.buttonDisabled,
+            ]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.8}
@@ -146,10 +215,10 @@ export default function LoginScreen() {
 
         {/* Footer / Switch to Register */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{"Don't have an account? "}</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>{"Don't have an account? "}</Text>
           <Link href={'/(auth)/register' as any} asChild>
             <TouchableOpacity hitSlop={8}>
-              <Text style={styles.footerLink}>Create account</Text>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>Create account</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -161,13 +230,25 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   keyboardContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+  },
+  topBar: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 44 : 20,
+  },
+  themeToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
@@ -177,39 +258,33 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    shadowColor: '#2563EB',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#0F172A',
     marginBottom: 8,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
     maxWidth: 280,
     lineHeight: 20,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
@@ -218,9 +293,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
     borderRadius: 10,
     padding: 12,
     marginBottom: 18,
@@ -231,7 +304,6 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 13,
-    color: '#B91C1C',
     lineHeight: 18,
   },
   inputGroup: {
@@ -240,16 +312,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#334155',
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
     height: 48,
   },
@@ -259,14 +328,12 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#0F172A',
     height: '100%',
   },
   eyeIconButton: {
     padding: 4,
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
     borderRadius: 10,
     height: 48,
     alignItems: 'center',
@@ -294,11 +361,9 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#64748B',
   },
   footerLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2563EB',
   },
 })

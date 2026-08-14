@@ -1,11 +1,13 @@
 import { Stack } from 'expo-router'
+import { useTheme } from '../../context/theme'
 
 export default function AppLayout() {
+  const { colors } = useTheme()
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#F8FAFC' },
+        contentStyle: { backgroundColor: colors.background },
       }}
     />
   )
