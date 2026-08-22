@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -7,13 +8,11 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../context/auth'
 import { useTheme } from '../../context/theme'
 import {
@@ -194,58 +193,59 @@ export default function HomeScreen() {
     }
   }
 
+  // Non-className props that require raw color values
+  const placeholderColor = isDark ? '#6B7280' : '#94A3B8'
+  const inputIconColor = isDark ? '#9CA3AF' : '#64748B'
+  const primaryColor = isDark ? '#3B82F6' : '#2563EB'
+  const errorColor = isDark ? '#EF4444' : '#DC2626'
+  const successColor = isDark ? '#10B981' : '#059669'
+
   const userInitial = (user?.email?.[0] || 'U').toUpperCase()
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-[#0B0F19]">
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: Platform.OS === 'android' ? 40 : 20,
+            paddingBottom: 40,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* User Profile Bar & Theme Switcher */}
           <View
-            style={[
-              styles.headerCard,
-              {
-                backgroundColor: colors.headerCardBg,
-                borderColor: colors.headerCardBorder,
-              },
-            ]}
+            className="rounded-2xl p-4 mb-6 border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
           >
-            <View style={styles.userInfoRow}>
-              <View
-                style={[
-                  styles.avatarCircle,
-                  {
-                    backgroundColor: colors.primaryBadgeBg,
-                    borderColor: colors.primaryBadgeBorder,
-                  },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: colors.primary }]}>{userInitial}</Text>
+            <View className="flex-row items-center">
+              <View className="w-11 h-11 rounded-full border items-center justify-center mr-3 border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
+                <Text className="text-[18px] font-bold text-blue-600 dark:text-blue-500">
+                  {userInitial}
+                </Text>
               </View>
-              <View style={styles.userTextContainer}>
-                <Text style={[styles.greetingText, { color: colors.textSecondary }]}>Logged in as host</Text>
-                <Text style={[styles.emailText, { color: colors.textPrimary }]} numberOfLines={1}>
+              <View className="flex-1">
+                <Text className="text-xs font-medium text-slate-500 dark:text-gray-400">
+                  Logged in as host
+                </Text>
+                <Text className="text-[15px] font-semibold text-slate-900 dark:text-gray-50" numberOfLines={1}>
                   {user?.email || 'Authenticated User'}
                 </Text>
               </View>
 
               {/* Theme Toggle Button */}
               <TouchableOpacity
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.iconButtonBg,
-                    borderColor: colors.iconButtonBorder,
-                    marginRight: 8,
-                  },
-                ]}
+                className="w-10 h-10 rounded-[10px] items-center justify-center border mr-2 border-slate-200 dark:border-gray-700 bg-slate-100 dark:bg-gray-800"
                 onPress={toggleTheme}
                 hitSlop={8}
                 accessibilityLabel="Toggle Theme"
@@ -259,95 +259,70 @@ export default function HomeScreen() {
 
               {/* Sign Out Button */}
               <TouchableOpacity
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.errorBg,
-                    borderColor: colors.errorBorder,
-                  },
-                ]}
+                className="w-10 h-10 rounded-[10px] items-center justify-center border border-red-300 dark:border-red-800 bg-red-50 dark:bg-[#450A0A]"
                 onPress={handleSignOut}
                 disabled={signingOut}
                 hitSlop={8}
                 accessibilityLabel="Sign Out"
               >
                 {signingOut ? (
-                  <ActivityIndicator size="small" color={colors.error} />
+                  <ActivityIndicator size="small" color={errorColor} />
                 ) : (
-                  <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                  <Ionicons name="log-out-outline" size={20} color={errorColor} />
                 )}
               </TouchableOpacity>
             </View>
           </View>
 
           {checkingConnection ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            <View className="py-16 items-center justify-center">
+              <ActivityIndicator size="large" color={primaryColor} />
+              <Text className="mt-3.5 text-sm text-slate-500 dark:text-gray-400">
                 Checking TTLock connection...
               </Text>
             </View>
           ) : !tokenInfo ? (
             /* ================= NOT CONNECTED STATE (DIRECT IN-APP LINK) ================= */
             <View
-              style={[
-                styles.connectCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.cardBorder,
-                },
-              ]}
+              className="rounded-2xl p-6 border mt-2.5 border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.06,
+                shadowRadius: 12,
+                elevation: 2,
+              }}
             >
-              <View
-                style={[
-                  styles.connectIconBadge,
-                  {
-                    backgroundColor: colors.primaryBadgeBg,
-                    borderColor: colors.primaryBadgeBorder,
-                  },
-                ]}
-              >
-                <Ionicons name="keypad-outline" size={32} color={colors.primary} />
+              <View className="w-16 h-16 rounded-[20px] border self-center items-center justify-center mb-4 border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
+                <Ionicons name="keypad-outline" size={32} color={primaryColor} />
               </View>
-              <Text style={[styles.connectTitle, { color: colors.textPrimary }]}>
+              <Text className="text-xl font-bold mb-2 text-center text-slate-900 dark:text-gray-50">
                 Connect TTLock Account
               </Text>
-              <Text style={[styles.connectDescription, { color: colors.textSecondary }]}>
+              <Text className="text-sm text-center leading-[22px] mb-5 text-slate-500 dark:text-gray-400">
                 Enter the credentials you use in the official TTLock mobile app to link your locks and issue passcodes.
               </Text>
 
               {linkError && (
-                <View
-                  style={[
-                    styles.errorContainer,
-                    {
-                      backgroundColor: colors.errorBg,
-                      borderColor: colors.errorBorder,
-                    },
-                  ]}
-                >
-                  <Ionicons name="alert-circle" size={20} color={colors.error} style={styles.errorIcon} />
-                  <Text style={[styles.errorText, { color: colors.errorText }]}>{linkError}</Text>
+                <View className="flex-row items-center border rounded-[10px] p-3 mb-4 border-red-300 dark:border-red-800 bg-red-50 dark:bg-[#450A0A]">
+                  <Ionicons name="alert-circle" size={20} color={errorColor} className="mr-2" />
+                  <Text className="flex-1 text-[13px] leading-[18px] text-red-700 dark:text-red-300">
+                    {linkError}
+                  </Text>
                 </View>
               )}
 
               {/* TTLock Username */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>TTLock Account / Email / Phone</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.inputBg,
-                      borderColor: colors.inputBorder,
-                    },
-                  ]}
-                >
-                  <Ionicons name="person-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
+              <View className="mb-4">
+                <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
+                  TTLock Account / Email / Phone
+                </Text>
+                <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
+                  <Ionicons name="person-outline" size={20} color={inputIconColor} className="mr-2" />
                   <TextInput
-                    style={[styles.input, { color: colors.textPrimary }]}
+                    className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
                     placeholder="e.g. your_ttlock_username"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={placeholderColor}
                     value={ttlockUsername}
                     onChangeText={setTtlockUsername}
                     autoCapitalize="none"
@@ -357,22 +332,16 @@ export default function HomeScreen() {
               </View>
 
               {/* TTLock Password */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>TTLock Password</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.inputBg,
-                      borderColor: colors.inputBorder,
-                    },
-                  ]}
-                >
-                  <Ionicons name="lock-closed-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
+              <View className="mb-4">
+                <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
+                  TTLock Password
+                </Text>
+                <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
+                  <Ionicons name="lock-closed-outline" size={20} color={inputIconColor} className="mr-2" />
                   <TextInput
-                    style={[styles.input, { color: colors.textPrimary }]}
+                    className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
                     placeholder="Enter TTLock password"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor={placeholderColor}
                     value={ttlockPassword}
                     onChangeText={setTtlockPassword}
                     secureTextEntry={!showTtlockPassword}
@@ -381,37 +350,39 @@ export default function HomeScreen() {
                   />
                   <Pressable
                     onPress={() => setShowTtlockPassword((prev) => !prev)}
-                    style={styles.eyeIconButton}
+                    className="p-1"
                     hitSlop={8}
                   >
                     <Ionicons
                       name={showTtlockPassword ? 'eye-off-outline' : 'eye-outline'}
                       size={20}
-                      color={colors.inputIcon}
+                      color={inputIconColor}
                     />
                   </Pressable>
                 </View>
               </View>
 
               <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: colors.primary },
-                  linking && styles.buttonDisabled,
-                ]}
+                className={`rounded-xl h-12 px-5 items-center justify-center w-full mt-2 bg-blue-600 dark:bg-blue-500${linking ? ' opacity-65' : ''}`}
                 onPress={handleLinkAccount}
                 disabled={linking}
                 activeOpacity={0.8}
+                style={{
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 6,
+                  elevation: 2,
+                }}
               >
                 {linking ? (
-                  <View style={styles.buttonInnerRow}>
+                  <View className="flex-row items-center justify-center">
                     <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryButtonText}>Linking TTLock Account...</Text>
+                    <Text className="text-white text-[15px] font-semibold">Linking TTLock Account...</Text>
                   </View>
                 ) : (
-                  <View style={styles.buttonInnerRow}>
+                  <View className="flex-row items-center justify-center">
                     <Ionicons name="link" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryButtonText}>Link TTLock Account</Text>
+                    <Text className="text-white text-[15px] font-semibold">Link TTLock Account</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -419,82 +390,81 @@ export default function HomeScreen() {
           ) : (
             /* ================= CONNECTED STATE (LOCK DASHBOARD) ================= */
             <>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Smart Lock Dashboard</Text>
-                <View
-                  style={[
-                    styles.connectedBadge,
-                    {
-                      backgroundColor: colors.successBg,
-                      borderColor: colors.successBorder,
-                    },
-                  ]}
-                >
-                  <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
-                  <Text style={[styles.connectedText, { color: colors.successText }]}>TTLock Linked</Text>
+              <View className="flex-row justify-between items-center mb-3.5">
+                <Text className="text-lg font-bold text-slate-900 dark:text-gray-50">
+                  Smart Lock Dashboard
+                </Text>
+                <View className="flex-row items-center px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950">
+                  <View className="w-1.5 h-1.5 rounded-full mr-1 bg-emerald-500 dark:bg-emerald-400" />
+                  <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    TTLock Linked
+                  </Text>
                 </View>
               </View>
 
               <View
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.cardBorder,
-                  },
-                ]}
+                className="rounded-2xl p-5 border mb-5 border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 10,
+                  elevation: 2,
+                }}
               >
-                <View style={styles.lockInfoRow}>
-                  <View
-                    style={[
-                      styles.lockIconContainer,
-                      {
-                        backgroundColor: colors.primaryBadgeBg,
-                        borderColor: colors.primaryBadgeBorder,
-                      },
-                    ]}
-                  >
-                    <Ionicons name="keypad" size={26} color={colors.primary} />
+                <View className="flex-row items-center">
+                  <View className="w-[50px] h-[50px] rounded-[14px] items-center justify-center mr-3.5 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
+                    <Ionicons name="keypad" size={26} color={primaryColor} />
                   </View>
-                  <View style={styles.lockDetails}>
-                    <Text style={[styles.lockName, { color: colors.textPrimary }]}>Main Entrance Lock</Text>
-                    <Text style={[styles.lockId, { color: colors.textSecondary }]}>Lock ID: 26242093</Text>
+                  <View className="flex-1">
+                    <Text className="text-base font-bold mb-0.5 text-slate-900 dark:text-gray-50">
+                      Main Entrance Lock
+                    </Text>
+                    <Text className="text-[13px] text-slate-500 dark:text-gray-400">
+                      Lock ID: 26242093
+                    </Text>
                   </View>
                 </View>
 
-                <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+                <View className="h-px my-4 bg-slate-100 dark:bg-gray-800" />
 
-                <View style={styles.specGrid}>
-                  <View style={styles.specItem}>
-                    <Text style={[styles.specLabel, { color: colors.textSecondary }]}>TTLock UID</Text>
-                    <Text style={[styles.specValue, { color: colors.textPrimary }]}>{tokenInfo.ttlock_uid || 'Linked'}</Text>
+                <View className="flex-row justify-between mb-5 ">
+                  <View className="flex-1">
+                    <Text className="text-xs mb-1 text-slate-500 dark:text-gray-400">TTLock UID</Text>
+                    <Text className="text-sm font-semibold text-slate-900 dark:text-gray-50">
+                      {tokenInfo.ttlock_uid || 'Linked'}
+                    </Text>
                   </View>
-                  <View style={styles.specItem}>
-                    <Text style={[styles.specLabel, { color: colors.textSecondary }]}>Passcode Type</Text>
-                    <Text style={[styles.specValue, { color: colors.textPrimary }]}>24-Hour Period</Text>
+                  <View className="flex-column items-end flex-1">
+                    <Text className="text-xs mb-1 text-slate-500 dark:text-gray-400">Passcode Type</Text>
+                    <Text className="text-sm font-semibold text-slate-900 dark:text-gray-50">
+                      24-Hour Period
+                    </Text>
                   </View>
                 </View>
 
                 {/* Passcode Generation Action */}
                 <TouchableOpacity
-                  style={[
-                    styles.generateButton,
-                    { backgroundColor: colors.primary },
-                    generating && styles.buttonDisabled,
-                  ]}
+                  className={`rounded-xl h-12 items-center justify-center bg-blue-600 dark:bg-blue-500${generating ? ' opacity-65' : ''}`}
                   onPress={handleGeneratePasscode}
                   disabled={generating}
                   activeOpacity={0.8}
+                  style={{
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
                 >
                   {generating ? (
-                    <View style={styles.buttonInnerRow}>
+                    <View className="flex-row items-center justify-center">
                       <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
-                      <Text style={styles.generateButtonText}>Generating Passcode...</Text>
+                      <Text className="text-white text-[15px] font-semibold">Generating Passcode...</Text>
                     </View>
                   ) : (
-                    <View style={styles.buttonInnerRow}>
+                    <View className="flex-row items-center justify-center">
                       <Ionicons name="key-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                      <Text style={styles.generateButtonText}>Generate Passcode</Text>
+                      <Text className="text-white text-[15px] font-semibold">Generate Passcode</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -503,45 +473,46 @@ export default function HomeScreen() {
               {/* Generated Passcode Result Card */}
               {passcode && (
                 <View
-                  style={[
-                    styles.resultCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.successBorder,
-                    },
-                  ]}
+                  className="rounded-2xl p-5 border mb-5 items-center border-emerald-200 dark:border-emerald-600 bg-white dark:bg-gray-900"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 10,
+                    elevation: 2,
+                  }}
                 >
-                  <View style={styles.resultHeader}>
-                    <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-                    <Text style={[styles.resultTitle, { color: colors.successText }]}>Passcode Ready</Text>
+                  <View className="flex-row items-center mb-3">
+                    <Ionicons name="checkmark-circle" size={22} color={successColor} />
+                    <Text className="text-[15px] font-semibold ml-1.5 text-emerald-700 dark:text-emerald-300">
+                      Passcode Ready
+                    </Text>
                   </View>
 
-                  <View
-                    style={[
-                      styles.passcodeBox,
-                      {
-                        backgroundColor: colors.successBg,
-                        borderColor: colors.successBorder,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.passcodeCode, { color: colors.successText }]}>{passcode}</Text>
+                  <View className="rounded-xl px-7 py-3.5 border-2 border-dashed my-2 border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950">
+                    <Text className="text-[28px] font-extrabold tracking-[4px] text-center text-emerald-700 dark:text-emerald-300">
+                      {passcode}
+                    </Text>
                   </View>
 
                   {passcodeExpiry && (
-                    <Text style={[styles.expiryText, { color: colors.textSecondary }]}>Valid until: {passcodeExpiry}</Text>
+                    <Text className="text-[13px] mt-1.5 text-slate-500 dark:text-gray-400">
+                      Valid until: {passcodeExpiry}
+                    </Text>
                   )}
                 </View>
               )}
 
               {/* Unlink Account Option */}
               <TouchableOpacity
-                style={styles.disconnectButton}
+                className="flex-row items-center justify-center py-3"
                 onPress={handleDisconnect}
                 activeOpacity={0.7}
               >
-                <Ionicons name="unlink-outline" size={16} color={colors.error} style={{ marginRight: 6 }} />
-                <Text style={[styles.disconnectButtonText, { color: colors.error }]}>Unlink TTLock Account</Text>
+                <Ionicons name="unlink-outline" size={16} color={errorColor} style={{ marginRight: 6 }} />
+                <Text className="text-sm font-semibold text-red-600 dark:text-red-500">
+                  Unlink TTLock Account
+                </Text>
               </TouchableOpacity>
             </>
           )}
@@ -550,320 +521,3 @@ export default function HomeScreen() {
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
-    paddingBottom: 40,
-  },
-  headerCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  userInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  userTextContainer: {
-    flex: 1,
-  },
-  greetingText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  emailText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  loadingContainer: {
-    paddingVertical: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 14,
-    fontSize: 14,
-  },
-  connectCard: {
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-    marginTop: 10,
-  },
-  connectIconBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  connectTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  connectDescription: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorIcon: {
-    marginRight: 8,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 48,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    height: '100%',
-  },
-  eyeIconButton: {
-    padding: 4,
-  },
-  primaryButton: {
-    borderRadius: 12,
-    height: 48,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
-    marginTop: 8,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  buttonInnerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.65,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  connectedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 5,
-  },
-  connectedText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-    marginBottom: 20,
-  },
-  lockInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  lockIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-    borderWidth: 1,
-  },
-  lockDetails: {
-    flex: 1,
-  },
-  lockName: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  lockId: {
-    fontSize: 13,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 16,
-  },
-  specGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  specItem: {
-    flex: 1,
-  },
-  specLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  specValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  generateButton: {
-    borderRadius: 12,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  generateButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  resultCard: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 2,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  resultTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  passcodeBox: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    marginVertical: 8,
-  },
-  passcodeCode: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 4,
-    textAlign: 'center',
-  },
-  expiryText: {
-    fontSize: 13,
-    marginTop: 6,
-  },
-  disconnectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
-  disconnectButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-})

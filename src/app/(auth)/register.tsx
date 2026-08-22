@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -18,7 +17,7 @@ import { useTheme } from '../../context/theme'
 
 export default function RegisterScreen() {
   const { signUp } = useAuth()
-  const { isDark, toggleTheme, colors } = useTheme()
+  const { isDark, toggleTheme } = useTheme()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -77,21 +76,20 @@ export default function RegisterScreen() {
     }
   }
 
+  // Non-className props that require raw color values
+  const placeholderColor = isDark ? '#6B7280' : '#94A3B8'
+  const inputIconColor = isDark ? '#9CA3AF' : '#64748B'
+  const primaryColor = isDark ? '#3B82F6' : '#2563EB'
+
   return (
     <KeyboardAvoidingView
-      style={[styles.keyboardContainer, { backgroundColor: colors.background }]}
+      className="flex-1 bg-slate-50 dark:bg-[#0B0F19]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Top Floating Theme Switcher */}
-      <View style={styles.topBar}>
+      <View className="items-end px-6 ios:pt-5 android:pt-11">
         <TouchableOpacity
-          style={[
-            styles.themeToggle,
-            {
-              backgroundColor: colors.iconButtonBg,
-              borderColor: colors.iconButtonBorder,
-            },
-          ]}
+          className="w-9 h-9 rounded-full items-center justify-center border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-gray-800"
           onPress={toggleTheme}
           hitSlop={8}
           accessibilityLabel="Toggle Theme"
@@ -105,86 +103,72 @@ export default function RegisterScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="flex-grow justify-center px-6 pb-10"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Brand Header */}
-        <View style={styles.header}>
+        <View className="items-center mb-8">
           <View
-            style={[
-              styles.logoBadge,
-              {
-                backgroundColor: colors.primaryBadgeBg,
-                borderColor: colors.primaryBadgeBorder,
-              },
-            ]}
+            className="w-[72px] h-[72px] rounded-[20px] items-center justify-center mb-4 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
           >
-            <Ionicons name="person-add" size={34} color={colors.primary} />
+            <Ionicons name="person-add" size={34} color={primaryColor} />
           </View>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Create Account</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text className="text-[26px] font-bold mb-2 tracking-[-0.5px] text-slate-900 dark:text-gray-50">
+            Create Account
+          </Text>
+          <Text className="text-sm text-center max-w-[280px] leading-5 text-slate-500 dark:text-gray-400">
             Sign up to start managing your TTLock devices
           </Text>
         </View>
 
         {/* Card Form */}
         <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.cardBorder,
-            },
-          ]}
+          className="rounded-2xl p-6 border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 12,
+            elevation: 2,
+          }}
         >
           {errorMessage && (
-            <View
-              style={[
-                styles.errorContainer,
-                {
-                  backgroundColor: colors.errorBg,
-                  borderColor: colors.errorBorder,
-                },
-              ]}
-            >
-              <Ionicons name="alert-circle" size={20} color={colors.error} style={styles.errorIcon} />
-              <Text style={[styles.errorText, { color: colors.errorText }]}>{errorMessage}</Text>
+            <View className="flex-row items-center border rounded-[10px] p-3 mb-[18px] border-red-300 dark:border-red-800 bg-red-50 dark:bg-[#450A0A]">
+              <Ionicons name="alert-circle" size={20} color={isDark ? '#EF4444' : '#DC2626'} className="mr-2" />
+              <Text className="flex-1 text-[13px] leading-[18px] text-red-700 dark:text-red-300">
+                {errorMessage}
+              </Text>
             </View>
           )}
 
           {infoMessage && (
-            <View
-              style={[
-                styles.infoContainer,
-                {
-                  backgroundColor: colors.successBg,
-                  borderColor: colors.successBorder,
-                },
-              ]}
-            >
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} style={styles.infoIcon} />
-              <Text style={[styles.infoText, { color: colors.successText }]}>{infoMessage}</Text>
+            <View className="flex-row items-center border rounded-[10px] p-3 mb-[18px] border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950">
+              <Ionicons name="checkmark-circle" size={20} color={isDark ? '#10B981' : '#059669'} className="mr-2" />
+              <Text className="flex-1 text-[13px] leading-[18px] text-emerald-700 dark:text-emerald-300">
+                {infoMessage}
+              </Text>
             </View>
           )}
 
           {/* Email Field */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>Email Address</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.inputBg,
-                  borderColor: colors.inputBorder,
-                },
-              ]}
-            >
-              <Ionicons name="mail-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
+          <View className="mb-[18px]">
+            <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
+              Email Address
+            </Text>
+            <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
+              <Ionicons name="mail-outline" size={20} color={inputIconColor} className="mr-2" />
               <TextInput
-                style={[styles.input, { color: colors.textPrimary }]}
+                className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
                 placeholder="name@example.com"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={placeholderColor}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -197,22 +181,16 @@ export default function RegisterScreen() {
           </View>
 
           {/* Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.inputBg,
-                  borderColor: colors.inputBorder,
-                },
-              ]}
-            >
-              <Ionicons name="lock-closed-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
+          <View className="mb-[18px]">
+            <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
+              Password
+            </Text>
+            <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
+              <Ionicons name="lock-closed-outline" size={20} color={inputIconColor} className="mr-2" />
               <TextInput
-                style={[styles.input, { color: colors.textPrimary }]}
+                className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
                 placeholder="At least 6 characters"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={placeholderColor}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -222,35 +200,29 @@ export default function RegisterScreen() {
               />
               <Pressable
                 onPress={() => setShowPassword((prev) => !prev)}
-                style={styles.eyeIconButton}
+                className="p-1"
                 hitSlop={8}
               >
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={colors.inputIcon}
+                  color={inputIconColor}
                 />
               </Pressable>
             </View>
           </View>
 
           {/* Confirm Password Field */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>Confirm Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.inputBg,
-                  borderColor: colors.inputBorder,
-                },
-              ]}
-            >
-              <Ionicons name="shield-checkmark-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
+          <View className="mb-[18px]">
+            <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
+              Confirm Password
+            </Text>
+            <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
+              <Ionicons name="shield-checkmark-outline" size={20} color={inputIconColor} className="mr-2" />
               <TextInput
-                style={[styles.input, { color: colors.textPrimary }]}
+                className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
                 placeholder="Re-enter your password"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={placeholderColor}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -260,13 +232,13 @@ export default function RegisterScreen() {
               />
               <Pressable
                 onPress={() => setShowConfirmPassword((prev) => !prev)}
-                style={styles.eyeIconButton}
+                className="p-1"
                 hitSlop={8}
               >
                 <Ionicons
                   name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={colors.inputIcon}
+                  color={inputIconColor}
                 />
               </Pressable>
             </View>
@@ -274,29 +246,32 @@ export default function RegisterScreen() {
 
           {/* Sign Up Action Button */}
           <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              { backgroundColor: colors.primary },
-              loading && styles.buttonDisabled,
-            ]}
+            className={`rounded-[10px] h-12 items-center justify-center mt-2 bg-blue-600 dark:bg-blue-500${loading ? ' opacity-65' : ''}`}
             onPress={handleRegister}
             disabled={loading}
             activeOpacity={0.8}
+            style={{
+              shadowColor: '#2563EB',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.primaryButtonText}>Create Account</Text>
+              <Text className="text-white text-base font-semibold">Create Account</Text>
             )}
           </TouchableOpacity>
         </View>
 
         {/* Footer / Switch to Login */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already have an account? </Text>
+        <View className="flex-row justify-center items-center mt-7">
+          <Text className="text-sm text-slate-500 dark:text-gray-400">Already have an account? </Text>
           <Link href={'/(auth)/login' as any} asChild>
             <TouchableOpacity hitSlop={8}>
-              <Text style={[styles.footerLink, { color: colors.primary }]}>Sign in</Text>
+              <Text className="text-sm font-semibold text-blue-600 dark:text-blue-500">Sign in</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -304,160 +279,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  keyboardContainer: {
-    flex: 1,
-  },
-  topBar: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'android' ? 44 : 20,
-  },
-  themeToggle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    maxWidth: 280,
-    lineHeight: 20,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 18,
-  },
-  errorIcon: {
-    marginRight: 8,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 18,
-  },
-  infoIcon: {
-    marginRight: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 48,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    height: '100%',
-  },
-  eyeIconButton: {
-    padding: 4,
-  },
-  primaryButton: {
-    borderRadius: 10,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  buttonDisabled: {
-    opacity: 0.65,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 28,
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  footerLink: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-})

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme as useNativeColorScheme, Platform } from 'react-native'
+import { useColorScheme as useNativeWindColorScheme } from 'nativewind'
 import * as SecureStore from 'expo-secure-store'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
@@ -156,6 +157,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }
 
   const colors = isDark ? darkColors : lightColors
+  const { setColorScheme } = useNativeWindColorScheme()
+
+  useEffect(() => {
+    setColorScheme(isDark ? 'dark' : 'light')
+  }, [isDark, setColorScheme])
 
   return (
     <ThemeContext.Provider

@@ -1,5 +1,6 @@
+import '../global.css'
 import React, { useEffect } from 'react'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../context/auth'
@@ -27,7 +28,7 @@ function RootNavigation() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-[#0B0F19]">
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
@@ -58,11 +59,3 @@ export default function RootLayout() {
     </ThemeProvider>
   )
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-})
