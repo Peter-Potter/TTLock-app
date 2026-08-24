@@ -10,16 +10,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { Link } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../context/auth'
 import { useTheme } from '../../context/theme'
 
 export default function LoginScreen() {
-  const { signIn } = useAuth()
-  const { isDark, toggleTheme, colors } = useTheme()
+  const { loginWithTTLock } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
 
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -28,21 +27,21 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrorMessage(null)
 
-    const trimmedEmail = email.trim()
-    if (!trimmedEmail) {
-      setErrorMessage('Please enter your email address.')
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      setErrorMessage('Please enter your TTLock username, email, or phone.')
       return
     }
     if (!password) {
-      setErrorMessage('Please enter your password.')
+      setErrorMessage('Please enter your TTLock password.')
       return
     }
 
     setLoading(true)
     try {
-      const { error } = await signIn(trimmedEmail, password)
+      const { error } = await loginWithTTLock(trimmedUsername, password)
       if (error) {
-        setErrorMessage(error.message || 'Invalid email or password.')
+        setErrorMessage(error.message || 'Invalid TTLock credentials. Please try again.')
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'An unexpected error occurred. Please try again.')
@@ -84,7 +83,8 @@ export default function LoginScreen() {
       >
         {/* Brand Header */}
         <View className="items-center mb-8">
-          <View className="w-[72px] h-[72px] rounded-[20px] items-center justify-center mb-4 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800"
+          <View
+            className="w-[72px] h-[72px] rounded-[20px] items-center justify-center mb-4 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800"
             style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
@@ -93,13 +93,13 @@ export default function LoginScreen() {
               elevation: 3,
             }}
           >
-            <Ionicons name="lock-closed" size={36} color={primaryColor} />
+            <Ionicons name="keypad" size={36} color={primaryColor} />
           </View>
           <Text className="text-[26px] font-bold mb-2 tracking-[-0.5px] text-slate-900 dark:text-gray-50">
-            Welcome Back
+            TTLock Passcode Manager
           </Text>
-          <Text className="text-sm text-center max-w-[280px] leading-5 text-slate-500 dark:text-gray-400">
-            Sign in to manage and generate TTLock passcodes
+          <Text className="text-sm text-center max-w-[300px] leading-5 text-slate-500 dark:text-gray-400">
+            Sign in with your official TTLock account to manage locks and generate instant passcodes
           </Text>
         </View>
 
@@ -123,23 +123,21 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* Email Field */}
+          {/* TTLock Username / Email Field */}
           <View className="mb-[18px]">
             <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
-              Email Address
+              TTLock Username / Email / Phone
             </Text>
             <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
-              <Ionicons name="mail-outline" size={20} color={inputIconColor} className="mr-2" />
+              <Ionicons name="person-outline" size={20} color={inputIconColor} className="mr-2" />
               <TextInput
                 className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
-                placeholder="name@example.com"
+                placeholder="e.g. user@example.com or phone"
                 placeholderTextColor={placeholderColor}
-                value={email}
-                onChangeText={setEmail}
+                value={username}
+                onChangeText={setUsername}
                 autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                textContentType="emailAddress"
+                autoComplete="username"
                 editable={!loading}
               />
             </View>
@@ -148,13 +146,13 @@ export default function LoginScreen() {
           {/* Password Field */}
           <View className="mb-[18px]">
             <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
-              Password
+              TTLock Password
             </Text>
             <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
               <Ionicons name="lock-closed-outline" size={20} color={inputIconColor} className="mr-2" />
               <TextInput
                 className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
-                placeholder="Enter your password"
+                placeholder="Enter TTLock password"
                 placeholderTextColor={placeholderColor}
                 value={password}
                 onChangeText={setPassword}
@@ -192,21 +190,24 @@ export default function LoginScreen() {
             }}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <View className="flex-row items-center justify-center">
+                <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
+                <Text className="text-white text-base font-semibold">Signing into TTLock...</Text>
+              </View>
             ) : (
-              <Text className="text-white text-base font-semibold">Sign In</Text>
+              <View className="flex-row items-center justify-center">
+                <Ionicons name="log-in-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text className="text-white text-base font-semibold">Sign In with TTLock</Text>
+              </View>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Footer / Switch to Register */}
-        <View className="flex-row justify-center items-center mt-7">
-          <Text className="text-sm text-slate-500 dark:text-gray-400">{"Don't have an account? "}</Text>
-          <Link href={'/(auth)/register' as any} asChild>
-            <TouchableOpacity hitSlop={8}>
-              <Text className="text-sm font-semibold text-blue-600 dark:text-blue-500">Create account</Text>
-            </TouchableOpacity>
-          </Link>
+        {/* Informational Help Note */}
+        <View className="items-center mt-7 px-4">
+          <Text className="text-xs text-center text-slate-400 dark:text-gray-500 leading-5">
+            Use the credentials from your official TTLock application. Your password is securely encrypted via MD5 OAuth before transmission.
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

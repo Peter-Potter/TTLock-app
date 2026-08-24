@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Session, User } from '@supabase/supabase-js'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { loginWithTTLock as loginWithTTLockLib } from '../lib/ttlock'
 
 interface AuthContextType {
   session: Session | null
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>
-  signUp: (email: string, password: string) => Promise<{ data: any; error: any }>
+  loginWithTTLock: (username: string, password: string) => Promise<{ data: any; error: any }>
   signOut: () => Promise<{ error: any }>
 }
 
@@ -15,8 +15,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   loading: true,
-  signIn: async () => ({ data: null, error: null }),
-  signUp: async () => ({ data: null, error: null }),
+  loginWithTTLock: async () => ({ data: null, error: null }),
   signOut: async () => ({ error: null }),
 })
 
@@ -45,28 +44,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    const response = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-    if (response.data.session) {
-      setSession(response.data.session)
-      setUser(response.data.session.user)
+  const loginWithTTLock = async (username: string, password: string) => {
+    try {
+      const data = await loginWithTTLockLib(username, password)
+      if (data?.session) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+        
+        if (sessionError) {
+          return { data: null, error: sessionError }
+        }
+        setSession(sessionData.session)
+        setUser(sessionData.user)
+      }
+      return { data, error: null }
+    } catch (err: any) {
+      console.log("Inside the second block")
+      return { data: null, error: err }
     }
-    return response
-  }
-
-  const signUp = async (email: string, password: string) => {
-    const response = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    })
-    if (response.data.session) {
-      setSession(response.data.session)
-      setUser(response.data.session.user)
-    }
-    return response
   }
 
   const signOut = async () => {
@@ -82,8 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user,
         loading,
-        signIn,
-        signUp,
+        loginWithTTLock,
         signOut,
       }}
     >

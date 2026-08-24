@@ -31,23 +31,20 @@ export const checkTTLockConnection = async (): Promise<TTLockTokenInfo | null> =
 // 2. Disconnect/remove TTLock token for the current user
 export const disconnectTTLock = async () => {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
-  const { error } = await supabase
-    .from('ttlock_tokens')
-    .delete()
-    .eq('user_id', user.id)
-
-  if (error) {
-    throw new Error(error.message)
+  if (user) {
+    await supabase
+      .from('ttlock_tokens')
+      .delete()
+      .eq('user_id', user.id)
   }
+  await supabase.auth.signOut()
 }
 
-// 3. Link TTLock Account via Direct OAuth2 API
-export const linkTTLockAccount = async (username: string, password: string) => {
+// 3. Log In with TTLock Account via Direct OAuth2 API & Provision Session
+export const loginWithTTLock = async (username: string, password: string) => {
   const { data, error } = await supabase.functions.invoke('ttlock-api', {
     body: {
-      action: 'linkAccount',
+      action: 'loginWithTTLock',
       username,
       password,
     },
@@ -72,6 +69,8 @@ export const linkTTLockAccount = async (username: string, password: string) => {
 
   return data
 }
+
+export const linkTTLockAccount = loginWithTTLock
 
 // 4. Call Edge Function to generate passcodes using the connected account's token
 export const generateTTLockPasscode = async (params: PasscodeParams) => {

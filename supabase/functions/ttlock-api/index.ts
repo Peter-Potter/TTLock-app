@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -155,6 +155,7 @@ function md5(string: string): string {
     c = addUnsigned(c, CC);
     d = addUnsigned(d, DD);
   }
+  console.log((wordToHex(a) + wordToHex(b) + wordToHex(c) + wordToHex(d)).toLowerCase());
   return (wordToHex(a) + wordToHex(b) + wordToHex(c) + wordToHex(d)).toLowerCase();
 }
 
@@ -165,33 +166,18 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Get auth token passed from mobile app
-    const authHeader = req.headers.get('Authorization')!
-    
-    // 2. Instantiate Supabase client inside Edge Function
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    // 3. Get currently logged in user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Parse payload sent from mobile app
-    const payload = await req.json()
+    const payload = await req.json().catch(() => ({}))
     const { action } = payload
     const clientId = Deno.env.get('TTLOCK_CLIENT_ID')!
     const clientSecret = Deno.env.get('TTLOCK_CLIENT_SECRET')!
 
-    // ================= ACTION 1: LINK TTLOCK ACCOUNT (Direct OAuth) =================
-    if (action === 'linkAccount') {
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // ================= ACTION 1: LOGIN WITH TTLOCK (Direct Auth & Token Sync) =================
+    if (action === 'loginWithTTLock' || action === 'linkAccount') {
       const { username, password } = payload
 
       if (!username || !password) {
@@ -220,28 +206,63 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json()
 
       if (tokenData.errcode || !tokenData.access_token) {
-        const errMsg = tokenData.errmsg || tokenData.error || 'Failed to authenticate with TTLock'
+        const errMsg = tokenData.errmsg || tokenData.error || 'Failed to authenticate with TTLock. Please check your credentials.'
         return new Response(JSON.stringify({ error: errMsg }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
 
-      // Compute expiration (default 7776000 seconds = ~90 days)
+      // 1. Resolve or create internal Supabase Auth user mapped to TTLock UID
+      const internalEmail = `ttlock_${tokenData.uid}@auth.local`
+      const internalPassword = `TTLock_Secret_${tokenData.uid}_${clientSecret.slice(0, 12)}`
+
+      let userId: string
+
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: internalEmail,
+        password: internalPassword,
+        email_confirm: true,
+        user_metadata: {
+          ttlock_uid: tokenData.uid,
+          ttlock_username: username.trim(),
+        },
+      })
+
+      if (newUser?.user) {
+        userId = newUser.user.id
+      } else {
+        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+        const existingUser = users?.find((u: { email?: string }) => u.email === internalEmail)
+        if (existingUser) {
+          userId = existingUser.id
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            password: internalPassword,
+            user_metadata: {
+              ttlock_uid: tokenData.uid,
+              ttlock_username: username.trim(),
+            },
+          })
+        } else {
+          return new Response(
+            JSON.stringify({ error: `Auth provisioning failed: ${createError?.message || 'User creation error'}` }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          )
+        }
+      }
+
+      // 2. Save/Upsert into ttlock_tokens using service role admin client
       const expiresInSeconds = typeof tokenData.expires_in === 'number' ? tokenData.expires_in : 7776000
       const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString()
-
-      // Save/Upsert into ttlock_tokens using service role admin client
-      const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
 
       const { error: upsertError } = await supabaseAdmin
         .from('ttlock_tokens')
         .upsert(
           {
-            user_id: user.id,
+            user_id: userId,
             ttlock_uid: tokenData.uid,
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token || '',
@@ -258,8 +279,60 @@ serve(async (req) => {
         })
       }
 
-      return new Response(JSON.stringify({ success: true, uid: tokenData.uid }), {
-        status: 200,
+      // 3. Authenticate Supabase session to return to the app
+      const anonClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      )
+
+      const { data: authData, error: signInError } = await anonClient.auth.signInWithPassword({
+        email: internalEmail,
+        password: internalPassword,
+      })
+
+      if (signInError || !authData.session) {
+        return new Response(
+          JSON.stringify({ error: `Session generation error: ${signInError?.message || 'Failed to generate session'}` }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          session: authData.session,
+          uid: tokenData.uid,
+          username: username.trim(),
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    // ================= PROTECTED ACTIONS: REQUIRE SUPABASE AUTH =================
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Missing Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid user session' }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

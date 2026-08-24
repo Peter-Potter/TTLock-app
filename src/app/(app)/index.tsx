@@ -5,11 +5,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -19,7 +17,6 @@ import {
   checkTTLockConnection,
   disconnectTTLock,
   generateTTLockPasscode,
-  linkTTLockAccount,
   TTLockTokenInfo,
 } from '../../lib/ttlock'
 
@@ -77,13 +74,6 @@ export default function HomeScreen() {
   const [checkingConnection, setCheckingConnection] = useState(true)
   const [tokenInfo, setTokenInfo] = useState<TTLockTokenInfo | null>(null)
 
-  // TTLock Linking form state
-  const [ttlockUsername, setTtlockUsername] = useState('')
-  const [ttlockPassword, setTtlockPassword] = useState('')
-  const [showTtlockPassword, setShowTtlockPassword] = useState(false)
-  const [linking, setLinking] = useState(false)
-  const [linkError, setLinkError] = useState<string | null>(null)
-
   // Passcode generation state
   const [passcodeOption, setPasscodeOption] = useState<PasscodeOption>('24_hours')
   const [showTypeSelector, setShowTypeSelector] = useState(false)
@@ -91,17 +81,6 @@ export default function HomeScreen() {
   const [signingOut, setSigningOut] = useState(false)
   const [passcode, setPasscode] = useState<string | null>(null)
   const [passcodeExpiry, setPasscodeExpiry] = useState<string | null>(null)
-
-  const refreshStatus = async () => {
-    try {
-      const info = await checkTTLockConnection()
-      setTokenInfo(info)
-    } catch (err: any) {
-      console.error('Error checking TTLock token status:', err)
-    } finally {
-      setCheckingConnection(false)
-    }
-  }
 
   useEffect(() => {
     let isMounted = true
@@ -125,33 +104,6 @@ export default function HomeScreen() {
       isMounted = false
     }
   }, [])
-
-  // Handle Link TTLock Account
-  const handleLinkAccount = async () => {
-    setLinkError(null)
-
-    const trimmedUsername = ttlockUsername.trim()
-    if (!trimmedUsername) {
-      setLinkError('Please enter your TTLock username or email.')
-      return
-    }
-    if (!ttlockPassword) {
-      setLinkError('Please enter your TTLock password.')
-      return
-    }
-
-    setLinking(true)
-    try {
-      await linkTTLockAccount(trimmedUsername, ttlockPassword)
-      setTtlockPassword('')
-      await refreshStatus()
-      showAlert('Success', 'Your TTLock account has been successfully linked!')
-    } catch (err: any) {
-      setLinkError(err?.message || 'Failed to link TTLock account.')
-    } finally {
-      setLinking(false)
-    }
-  }
 
   // Handle Disconnect TTLock
   const handleDisconnect = async () => {
@@ -241,13 +193,13 @@ export default function HomeScreen() {
   }
 
   // Non-className props that require raw color values
-  const placeholderColor = isDark ? '#6B7280' : '#94A3B8'
   const inputIconColor = isDark ? '#9CA3AF' : '#64748B'
   const primaryColor = isDark ? '#3B82F6' : '#2563EB'
   const errorColor = isDark ? '#EF4444' : '#DC2626'
   const successColor = isDark ? '#10B981' : '#059669'
 
-  const userInitial = (user?.email?.[0] || 'U').toUpperCase()
+  const displayName = user?.user_metadata?.ttlock_username || user?.email?.replace(/@.*/, '') || 'TTLock User'
+  const userInitial = displayName[0]?.toUpperCase() || 'T'
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-[#0B0F19]">
@@ -283,10 +235,10 @@ export default function HomeScreen() {
               </View>
               <View className="flex-1">
                 <Text className="text-xs font-medium text-slate-500 dark:text-gray-400">
-                  Logged in as host
+                  TTLock Account
                 </Text>
                 <Text className="text-[15px] font-semibold text-slate-900 dark:text-gray-50" numberOfLines={1}>
-                  {user?.email || 'Authenticated User'}
+                  {displayName}
                 </Text>
               </View>
 
@@ -325,11 +277,11 @@ export default function HomeScreen() {
             <View className="py-16 items-center justify-center">
               <ActivityIndicator size="large" color={primaryColor} />
               <Text className="mt-3.5 text-sm text-slate-500 dark:text-gray-400">
-                Checking TTLock connection...
+                Loading smart locks...
               </Text>
             </View>
           ) : !tokenInfo ? (
-            /* ================= NOT CONNECTED STATE (DIRECT IN-APP LINK) ================= */
+            /* ================= SESSION EXPIRED / NOT FOUND STATE ================= */
             <View
               className="rounded-2xl p-6 border mt-2.5 border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
               style={{
@@ -340,98 +292,25 @@ export default function HomeScreen() {
                 elevation: 2,
               }}
             >
-              <View className="w-16 h-16 rounded-[20px] border self-center items-center justify-center mb-4 border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
-                <Ionicons name="keypad-outline" size={32} color={primaryColor} />
+              <View className="w-16 h-16 rounded-[20px] border self-center items-center justify-center mb-4 border-amber-100 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/40">
+                <Ionicons name="alert-circle-outline" size={32} color={isDark ? '#FBBF24' : '#D97706'} />
               </View>
               <Text className="text-xl font-bold mb-2 text-center text-slate-900 dark:text-gray-50">
-                Connect TTLock Account
+                TTLock Session Expired
               </Text>
               <Text className="text-sm text-center leading-[22px] mb-5 text-slate-500 dark:text-gray-400">
-                Enter the credentials you use in the official TTLock mobile app to link your locks and issue passcodes.
+                Your TTLock connection needs to be refreshed. Please sign in again with your TTLock credentials.
               </Text>
 
-              {linkError && (
-                <View className="flex-row items-center border rounded-[10px] p-3 mb-4 border-red-300 dark:border-red-800 bg-red-50 dark:bg-[#450A0A]">
-                  <Ionicons name="alert-circle" size={20} color={errorColor} className="mr-2" />
-                  <Text className="flex-1 text-[13px] leading-[18px] text-red-700 dark:text-red-300">
-                    {linkError}
-                  </Text>
-                </View>
-              )}
-
-              {/* TTLock Username */}
-              <View className="mb-4">
-                <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
-                  TTLock Account / Email / Phone
-                </Text>
-                <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
-                  <Ionicons name="person-outline" size={20} color={inputIconColor} className="mr-2" />
-                  <TextInput
-                    className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
-                    placeholder="e.g. your_ttlock_username"
-                    placeholderTextColor={placeholderColor}
-                    value={ttlockUsername}
-                    onChangeText={setTtlockUsername}
-                    autoCapitalize="none"
-                    editable={!linking}
-                  />
-                </View>
-              </View>
-
-              {/* TTLock Password */}
-              <View className="mb-4">
-                <Text className="text-sm font-semibold mb-1.5 text-slate-900 dark:text-gray-50">
-                  TTLock Password
-                </Text>
-                <View className="flex-row items-center border rounded-[10px] px-3 h-12 border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
-                  <Ionicons name="lock-closed-outline" size={20} color={inputIconColor} className="mr-2" />
-                  <TextInput
-                    className="flex-1 text-[15px] h-full text-slate-900 dark:text-gray-50"
-                    placeholder="Enter TTLock password"
-                    placeholderTextColor={placeholderColor}
-                    value={ttlockPassword}
-                    onChangeText={setTtlockPassword}
-                    secureTextEntry={!showTtlockPassword}
-                    autoCapitalize="none"
-                    editable={!linking}
-                  />
-                  <Pressable
-                    onPress={() => setShowTtlockPassword((prev) => !prev)}
-                    className="p-1"
-                    hitSlop={8}
-                  >
-                    <Ionicons
-                      name={showTtlockPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color={inputIconColor}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-
               <TouchableOpacity
-                className={`rounded-xl h-12 px-5 items-center justify-center w-full mt-2 bg-blue-600 dark:bg-blue-500${linking ? ' opacity-65' : ''}`}
-                onPress={handleLinkAccount}
-                disabled={linking}
+                className="rounded-xl h-12 px-5 items-center justify-center w-full mt-2 bg-blue-600 dark:bg-blue-500"
+                onPress={handleSignOut}
                 activeOpacity={0.8}
-                style={{
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 6,
-                  elevation: 2,
-                }}
               >
-                {linking ? (
-                  <View className="flex-row items-center justify-center">
-                    <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
-                    <Text className="text-white text-[15px] font-semibold">Linking TTLock Account...</Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center justify-center">
-                    <Ionicons name="link" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text className="text-white text-[15px] font-semibold">Link TTLock Account</Text>
-                  </View>
-                )}
+                <View className="flex-row items-center justify-center">
+                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Text className="text-white text-[15px] font-semibold">Sign In Again</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
