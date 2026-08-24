@@ -23,6 +23,45 @@ import {
   TTLockTokenInfo,
 } from '../../lib/ttlock'
 
+type PasscodeOption = 'one_time' | 'permanent' | '1_hour' | '24_hours'
+
+interface PasscodeOptionConfig {
+  label: string
+  description: string
+  type: number
+  durationMs?: number
+  badgeText: string
+}
+
+const PASSCODE_CONFIGS: Record<PasscodeOption, PasscodeOptionConfig> = {
+  'one_time': {
+    label: 'One-Time Passcode',
+    description: 'Valid for 1 single unlock (within 6h)',
+    type: 1,
+    badgeText: 'One-Time',
+  },
+  'permanent': {
+    label: 'Permanent Passcode',
+    description: 'Never expires (activate within 24h)',
+    type: 2,
+    badgeText: 'Permanent',
+  },
+  '1_hour': {
+    label: '1 Hour Period',
+    description: 'Temporary passcode valid for 1 hour',
+    type: 3,
+    durationMs: 1 * 60 * 60 * 1000,
+    badgeText: '1 Hour',
+  },
+  '24_hours': {
+    label: '24-Hour Period',
+    description: 'Temporary passcode valid for 24 hours',
+    type: 3,
+    durationMs: 24 * 60 * 60 * 1000,
+    badgeText: '24-Hour',
+  },
+}
+
 const showAlert = (title: string, message: string) => {
   if (Platform.OS === 'web') {
     window.alert(`${title}: ${message}`)
@@ -46,6 +85,8 @@ export default function HomeScreen() {
   const [linkError, setLinkError] = useState<string | null>(null)
 
   // Passcode generation state
+  const [passcodeOption, setPasscodeOption] = useState<PasscodeOption>('24_hours')
+  const [showTypeSelector, setShowTypeSelector] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [passcode, setPasscode] = useState<string | null>(null)
@@ -145,21 +186,27 @@ export default function HomeScreen() {
   const handleGeneratePasscode = async () => {
     setGenerating(true)
     try {
+      const config = PASSCODE_CONFIGS[passcodeOption]
       const now = Date.now()
-      const oneDay = 24 * 60 * 60 * 1000
-      const expiryTime = now + oneDay
+      const endDate = config.durationMs ? now + config.durationMs : now
 
       const result = await generateTTLockPasscode({
         lockId: 26242093,
-        keyboardPwdName: `Passcode for ${user?.email || 'Guest'}`,
-        keyboardPwdType: 3,
+        keyboardPwdName: `Passcode (${config.badgeText})`,
+        keyboardPwdType: config.type,
         startDate: now,
-        endDate: expiryTime,
+        endDate: endDate,
       })
 
       if (result?.keyboardPwd) {
         setPasscode(result.keyboardPwd)
-        setPasscodeExpiry(new Date(expiryTime).toLocaleString())
+        if (config.type === 1) {
+          setPasscodeExpiry('One-time use (within 6 hours)')
+        } else if (config.type === 2) {
+          setPasscodeExpiry('Permanent (activate within 24 hours)')
+        } else {
+          setPasscodeExpiry(`Valid until: ${new Date(endDate).toLocaleString()}`)
+        }
       } else {
         const errorMsg = result?.errmsg || result?.error || JSON.stringify(result)
         showAlert('TTLock Error', errorMsg)
@@ -428,20 +475,79 @@ export default function HomeScreen() {
 
                 <View className="h-px my-4 bg-slate-100 dark:bg-gray-800" />
 
-                <View className="flex-row justify-between mb-5 ">
+                <View className="flex-row justify-between mb-4 items-center">
                   <View className="flex-1">
                     <Text className="text-xs mb-1 text-slate-500 dark:text-gray-400">TTLock UID</Text>
                     <Text className="text-sm font-semibold text-slate-900 dark:text-gray-50">
                       {tokenInfo.ttlock_uid || 'Linked'}
                     </Text>
                   </View>
-                  <View className="flex-column items-end flex-1">
-                    <Text className="text-xs mb-1 text-slate-500 dark:text-gray-400">Passcode Type</Text>
-                    <Text className="text-sm font-semibold text-slate-900 dark:text-gray-50">
-                      24-Hour Period
-                    </Text>
-                  </View>
+                  <TouchableOpacity
+                    className="items-end"
+                    onPress={() => setShowTypeSelector((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center mb-1">
+                      <Text className="text-xs text-slate-500 dark:text-gray-400 mr-1">Passcode Type</Text>
+                      <Ionicons
+                        name={showTypeSelector ? 'chevron-up' : 'chevron-down'}
+                        size={12}
+                        color={inputIconColor}
+                      />
+                    </View>
+                    <View className="flex-row items-center px-2.5 py-1 rounded-lg border border-blue-200 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
+                      <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        {PASSCODE_CONFIGS[passcodeOption].badgeText}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
+
+                {/* Inline Dropdown Options */}
+                {showTypeSelector && (
+                  <View className="mb-4 rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50/80 dark:bg-gray-800/50 p-1.5 overflow-hidden">
+                    <Text className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-400 px-2 py-1 mb-0.5">
+                      Select Type / Duration
+                    </Text>
+                    {(Object.keys(PASSCODE_CONFIGS) as PasscodeOption[]).map((key) => {
+                      const item = PASSCODE_CONFIGS[key]
+                      const isSelected = passcodeOption === key
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          className={`flex-row items-center justify-between py-2 px-2.5 rounded-lg mb-1 ${
+                            isSelected
+                              ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800'
+                              : 'bg-transparent'
+                          }`}
+                          onPress={() => {
+                            setPasscodeOption(key)
+                            setShowTypeSelector(false)
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View className="flex-1 mr-2">
+                            <Text
+                              className={`text-[13px] font-semibold ${
+                                isSelected
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-slate-800 dark:text-gray-200'
+                              }`}
+                            >
+                              {item.label}
+                            </Text>
+                            <Text className="text-[11px] text-slate-500 dark:text-gray-400">
+                              {item.description}
+                            </Text>
+                          </View>
+                          {isSelected && (
+                            <Ionicons name="checkmark-circle" size={18} color={primaryColor} />
+                          )}
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                )}
 
                 {/* Passcode Generation Action */}
                 <TouchableOpacity
@@ -497,7 +603,7 @@ export default function HomeScreen() {
 
                   {passcodeExpiry && (
                     <Text className="text-[13px] mt-1.5 text-slate-500 dark:text-gray-400">
-                      Valid until: {passcodeExpiry}
+                      {passcodeExpiry.startsWith('Valid until:') ? passcodeExpiry : `Validity: ${passcodeExpiry}`}
                     </Text>
                   )}
                 </View>
