@@ -30,4 +30,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/                  # Web build directory
-          server-dir: /public_html/           # cPanel destination directory
+          server-dir: /           # cPanel destination directory

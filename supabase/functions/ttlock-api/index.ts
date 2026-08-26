@@ -169,7 +169,8 @@ serve(async (req) => {
     const payload = await req.json().catch(() => ({}))
     const { action } = payload
     const clientId = Deno.env.get('TTLOCK_CLIENT_ID')!
-    const clientSecret = Deno.env.get('TTLOCK_CLIENT_SECRET')!
+    const clientSecret = Deno.env.get('TTLOCK_CLIENT_SECRET')!  //Where are all these values coming from? Why do the client_id and 
+                                                                // _secret not match?
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -219,7 +220,7 @@ serve(async (req) => {
 
       let userId: string
 
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({  //Why not supabase.auth.signUp here?
         email: internalEmail,
         password: internalPassword,
         email_confirm: true,
@@ -255,7 +256,7 @@ serve(async (req) => {
       }
 
       // 2. Save/Upsert into ttlock_tokens using service role admin client
-      const expiresInSeconds = typeof tokenData.expires_in === 'number' ? tokenData.expires_in : 7776000
+      const expiresInSeconds = typeof tokenData.expires_in === 'number' ? tokenData.expires_in : 7776000 // why typeof here?
       const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString()
 
       const { error: upsertError } = await supabaseAdmin
