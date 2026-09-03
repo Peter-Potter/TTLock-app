@@ -381,6 +381,37 @@ serve(async (req) => {
       })
     }
 
+
+    // ================= ACTION 3: GET LOCK LIST =================                                                                                
+    if (action === 'getLocks') {                                                                                                                
+      const { data: tokenData } = await supabaseClient                                                                                          
+        .from('ttlock_tokens')                                                                                                                  
+        .select('access_token')                                                                                                                 
+        .eq('user_id', user.id)                                                                                                                 
+        .single()                                                                                                                               
+                                                                                                                                                
+      if (!tokenData?.access_token) {                                                                                                           
+        return new Response(JSON.stringify({ error: 'TTLock token not found' }), { status: 404, headers: corsHeaders })                         
+      }                                                                                                                                         
+                                                                                                                                                
+      const params = new URLSearchParams({                                                                                                      
+        clientId: clientId,                                                                                                                     
+        accessToken: tokenData.access_token,                                                                                                    
+        pageNo: '1',                                                                                                                            
+        pageSize: '100',                                                                                                                        
+        date: String(Date.now()),                                                                                                               
+      })                                                                                                                                        
+                                                                                                                                                
+      const response = await fetch('https://api.ttlock.com/v3/lock/list', {                                                                     
+        method: 'POST',                                                                                                                         
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },                                                                       
+        body: params.toString(),                                                                                                                
+      })                                                                                                                                        
+                                                                                                                                                
+      const result = await response.json()                                                                                                      
+      return new Response(JSON.stringify(result), { headers: corsHeaders, status: 200 })                                                        
+    }
+
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

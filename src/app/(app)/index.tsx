@@ -5,11 +5,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native'
 import { useAuth } from '../../context/auth'
 import { useTheme } from '../../context/theme'
@@ -17,6 +16,8 @@ import {
   checkTTLockConnection,
   disconnectTTLock,
   generateTTLockPasscode,
+  getUserLocks,
+  TTLockItem,
   TTLockTokenInfo,
 } from '../../lib/ttlock'
 
@@ -69,10 +70,13 @@ const showAlert = (title: string, message: string) => {
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth()
-  const { isDark, toggleTheme, colors } = useTheme()
+  const { isDark, toggleTheme } = useTheme()
 
   const [checkingConnection, setCheckingConnection] = useState(true)
   const [tokenInfo, setTokenInfo] = useState<TTLockTokenInfo | null>(null)
+  const [locks, setLocks] = useState<TTLockItem[]>([])
+  const [loadingLocks, setLoadingLocks] = useState(false)
+  const [selectedLockId, setSelectedLockId] = useState<number | null>(null)
 
   // Passcode generation state
   const [passcodeOption, setPasscodeOption] = useState<PasscodeOption>('24_hours')
@@ -87,13 +91,24 @@ export default function HomeScreen() {
     const loadStatus = async () => {
       try {
         const info = await checkTTLockConnection()
-        if (isMounted) {
-          setTokenInfo(info)
+        if (!isMounted) return
+        setTokenInfo(info)
+
+        if (info) {
+          setLoadingLocks(true)
+          const userLocks = await getUserLocks()
+          if (isMounted) {
+            setLocks(userLocks || [])
+            if (userLocks && userLocks.length > 0) {
+              setSelectedLockId(userLocks[0].lockId)
+            }
+          }
         }
       } catch (err: any) {
         console.error('Error checking TTLock token status:', err)
       } finally {
         if (isMounted) {
+          setLoadingLocks(false)
           setCheckingConnection(false)
         }
       }
@@ -111,6 +126,8 @@ export default function HomeScreen() {
       try {
         await disconnectTTLock()
         setTokenInfo(null)
+        setLocks([])
+        setSelectedLockId(null)
         setPasscode(null)
         showAlert('Disconnected', 'Your TTLock account has been unlinked.')
       } catch (err: any) {
@@ -123,19 +140,20 @@ export default function HomeScreen() {
         await performDisconnect()
       }
     } else {
-      Alert.alert(
-        'Disconnect TTLock',
-        'Are you sure you want to unlink your TTLock account?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Disconnect', style: 'destructive', onPress: performDisconnect },
-        ]
-      )
+      Alert.alert('Disconnect TTLock', 'Are you sure you want to unlink your TTLock account?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Disconnect', style: 'destructive', onPress: performDisconnect },
+      ])
     }
   }
 
   // Handle Passcode Generation
   const handleGeneratePasscode = async () => {
+    if (!selectedLockId) {
+      showAlert('No Lock Selected', 'Please select a lock from the list to generate a passcode.')
+      return
+    }
+
     setGenerating(true)
     try {
       const config = PASSCODE_CONFIGS[passcodeOption]
@@ -143,7 +161,7 @@ export default function HomeScreen() {
       const endDate = config.durationMs ? now + config.durationMs : now
 
       const result = await generateTTLockPasscode({
-        lockId: 26242093,
+        lockId: selectedLockId,
         keyboardPwdName: `Passcode (${config.badgeText})`,
         keyboardPwdType: config.type,
         startDate: now,
@@ -192,7 +210,6 @@ export default function HomeScreen() {
     }
   }
 
-  // Non-className props that require raw color values
   const inputIconColor = isDark ? '#9CA3AF' : '#64748B'
   const primaryColor = isDark ? '#3B82F6' : '#2563EB'
   const errorColor = isDark ? '#EF4444' : '#DC2626'
@@ -202,19 +219,20 @@ export default function HomeScreen() {
   const userInitial = displayName[0]?.toUpperCase() || 'T'
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-[#0B0F19]">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    <View className="flex-1 bg-slate-50 dark:bg-[#0B0F19]">
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          className="flex-1"
+          style={{ flex: 1 }}
           contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: 20,
             paddingTop: Platform.OS === 'android' ? 40 : 20,
-            paddingBottom: 40,
+            paddingBottom: 60,
           }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
         >
           {/* User Profile Bar & Theme Switcher */}
           <View
@@ -229,34 +247,24 @@ export default function HomeScreen() {
           >
             <View className="flex-row items-center">
               <View className="w-11 h-11 rounded-full border items-center justify-center mr-3 border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
-                <Text className="text-[18px] font-bold text-blue-600 dark:text-blue-500">
-                  {userInitial}
-                </Text>
+                <Text className="text-[18px] font-bold text-blue-600 dark:text-blue-500">{userInitial}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-xs font-medium text-slate-500 dark:text-gray-400">
-                  TTLock Account
-                </Text>
+                <Text className="text-xs font-medium text-slate-500 dark:text-gray-400">TTLock Account</Text>
                 <Text className="text-[15px] font-semibold text-slate-900 dark:text-gray-50" numberOfLines={1}>
                   {displayName}
                 </Text>
               </View>
 
-              {/* Theme Toggle Button */}
               <TouchableOpacity
                 className="w-10 h-10 rounded-[10px] items-center justify-center border mr-2 border-slate-200 dark:border-gray-700 bg-slate-100 dark:bg-gray-800"
                 onPress={toggleTheme}
                 hitSlop={8}
                 accessibilityLabel="Toggle Theme"
               >
-                <Ionicons
-                  name={isDark ? 'sunny' : 'moon'}
-                  size={20}
-                  color={isDark ? '#FBBF24' : '#64748B'}
-                />
+                <Ionicons name={isDark ? 'sunny' : 'moon'} size={20} color={isDark ? '#FBBF24' : '#64748B'} />
               </TouchableOpacity>
 
-              {/* Sign Out Button */}
               <TouchableOpacity
                 className="w-10 h-10 rounded-[10px] items-center justify-center border border-red-300 dark:border-red-800 bg-red-50 dark:bg-[#450A0A]"
                 onPress={handleSignOut}
@@ -276,12 +284,10 @@ export default function HomeScreen() {
           {checkingConnection ? (
             <View className="py-16 items-center justify-center">
               <ActivityIndicator size="large" color={primaryColor} />
-              <Text className="mt-3.5 text-sm text-slate-500 dark:text-gray-400">
-                Loading smart locks...
-              </Text>
+              <Text className="mt-3.5 text-sm text-slate-500 dark:text-gray-400">Loading smart locks...</Text>
             </View>
           ) : !tokenInfo ? (
-            /* ================= SESSION EXPIRED / NOT FOUND STATE ================= */
+            /* SESSION EXPIRED / NOT FOUND STATE */
             <View
               className="rounded-2xl p-6 border mt-2.5 border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
               style={{
@@ -314,20 +320,132 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            /* ================= CONNECTED STATE (LOCK DASHBOARD) ================= */
+            /* CONNECTED STATE (LOCK DASHBOARD) */
             <>
               <View className="flex-row justify-between items-center mb-3.5">
-                <Text className="text-lg font-bold text-slate-900 dark:text-gray-50">
-                  Smart Lock Dashboard
-                </Text>
+                <Text className="text-lg font-bold text-slate-900 dark:text-gray-50">Smart Lock Dashboard</Text>
                 <View className="flex-row items-center px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950">
                   <View className="w-1.5 h-1.5 rounded-full mr-1 bg-emerald-500 dark:bg-emerald-400" />
-                  <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                    TTLock Linked
-                  </Text>
+                  <Text className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">TTLock Linked</Text>
                 </View>
               </View>
 
+              {/* Dynamic Lock List Section */}
+              {loadingLocks ? (
+                <View className="py-8 items-center justify-center">
+                  <ActivityIndicator size="small" color={primaryColor} />
+                  <Text className="mt-2 text-xs text-slate-500 dark:text-gray-400">Fetching locks...</Text>
+                </View>
+              ) : locks.length === 0 ? (
+                <View className="rounded-2xl p-5 mb-5 border border-dashed border-slate-300 dark:border-gray-800 items-center justify-center bg-white dark:bg-gray-900">
+                  <Ionicons name="keypad-outline" size={32} color={inputIconColor} />
+                  <Text className="mt-2 text-sm font-semibold text-slate-700 dark:text-gray-300">No locks found</Text>
+                  <Text className="text-xs text-slate-500 dark:text-gray-400 text-center mt-1">
+                    No locks associated with this TTLock account.
+                  </Text>
+                </View>
+              ) : (
+                <View className="mb-5">
+                  <Text className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-2.5">
+                    Select Target Lock ({locks.length})
+                  </Text>
+
+                  {locks.map((lock) => {
+                    const isSelected = selectedLockId === lock.lockId
+                    const lockTitle = lock.lockAlias || lock.lockName || `Lock #${lock.lockId}`
+                    const battery = lock.electricQuantity ?? null
+
+                    return (
+                      <TouchableOpacity
+                        key={lock.lockId}
+                        onPress={() => setSelectedLockId(lock.lockId)}
+                        activeOpacity={0.8}
+                        className={`rounded-2xl p-4 mb-3 border ${
+                          isSelected
+                            ? 'border-blue-500 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-950/20'
+                            : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900'
+                        }`}
+                        style={{
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: isSelected ? 0.08 : 0.03,
+                          shadowRadius: 6,
+                          elevation: 2,
+                        }}
+                      >
+                        <View className="flex-row items-center justify-between">
+                          <View className="flex-row items-center flex-1 mr-2">
+                            <View
+                              className={`w-11 h-11 rounded-xl items-center justify-center mr-3 border ${
+                                isSelected
+                                  ? 'border-blue-200 dark:border-blue-700 bg-blue-100 dark:bg-blue-900/50'
+                                  : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800'
+                              }`}
+                            >
+                              <Ionicons
+                                name="keypad"
+                                size={22}
+                                color={isSelected ? primaryColor : inputIconColor}
+                              />
+                            </View>
+
+                            <View className="flex-1">
+                              <Text
+                                className={`text-[15px] font-bold ${
+                                  isSelected
+                                    ? 'text-blue-900 dark:text-blue-400'
+                                    : 'text-slate-900 dark:text-gray-50'
+                                }`}
+                                numberOfLines={1}
+                              >
+                                {lockTitle}
+                              </Text>
+                              <Text className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                ID: {lock.lockId}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View className="flex-row items-center">
+                            {battery !== null && (
+                              <View className="flex-row items-center mr-3 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-gray-800">
+                                <Ionicons
+                                  name={
+                                    battery > 70
+                                      ? 'battery-full'
+                                      : battery > 20
+                                      ? 'battery-half'
+                                      : 'battery-dead'
+                                  }
+                                  size={14}
+                                  color={battery <= 20 ? errorColor : inputIconColor}
+                                />
+                                <Text
+                                  className={`text-[11px] font-medium ml-1 ${
+                                    battery <= 20
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : 'text-slate-600 dark:text-gray-400'
+                                  }`}
+                                >
+                                  {battery}%
+                                </Text>
+                              </View>
+                            )}
+
+                            <Ionicons
+                              name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                              size={20}
+                              color={isSelected ? primaryColor : inputIconColor}
+                            />
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              )}
+
+              {/* Passcode Config & Generation Block */}
               <View
                 className="rounded-2xl p-5 border mb-5 border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900"
                 style={{
@@ -338,22 +456,6 @@ export default function HomeScreen() {
                   elevation: 2,
                 }}
               >
-                <View className="flex-row items-center">
-                  <View className="w-[50px] h-[50px] rounded-[14px] items-center justify-center mr-3.5 border border-blue-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800">
-                    <Ionicons name="keypad" size={26} color={primaryColor} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-base font-bold mb-0.5 text-slate-900 dark:text-gray-50">
-                      Main Entrance Lock
-                    </Text>
-                    <Text className="text-[13px] text-slate-500 dark:text-gray-400">
-                      Lock ID: 26242093
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="h-px my-4 bg-slate-100 dark:bg-gray-800" />
-
                 <View className="flex-row justify-between mb-4 items-center">
                   <View className="flex-1">
                     <Text className="text-xs mb-1 text-slate-500 dark:text-gray-400">TTLock UID</Text>
@@ -419,9 +521,7 @@ export default function HomeScreen() {
                               {item.description}
                             </Text>
                           </View>
-                          {isSelected && (
-                            <Ionicons name="checkmark-circle" size={18} color={primaryColor} />
-                          )}
+                          {isSelected && <Ionicons name="checkmark-circle" size={18} color={primaryColor} />}
                         </TouchableOpacity>
                       )
                     })}
@@ -430,9 +530,11 @@ export default function HomeScreen() {
 
                 {/* Passcode Generation Action */}
                 <TouchableOpacity
-                  className={`rounded-xl h-12 items-center justify-center bg-blue-600 dark:bg-blue-500${generating ? ' opacity-65' : ''}`}
+                  className={`rounded-xl h-12 items-center justify-center bg-blue-600 dark:bg-blue-500${
+                    generating || !selectedLockId ? ' opacity-65' : ''
+                  }`}
                   onPress={handleGeneratePasscode}
-                  disabled={generating}
+                  disabled={generating || !selectedLockId}
                   activeOpacity={0.8}
                   style={{
                     shadowOffset: { width: 0, height: 4 },
@@ -495,14 +597,12 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Ionicons name="unlink-outline" size={16} color={errorColor} style={{ marginRight: 6 }} />
-                <Text className="text-sm font-semibold text-red-600 dark:text-red-500">
-                  Unlink TTLock Account
-                </Text>
+                <Text className="text-sm font-semibold text-red-600 dark:text-red-500">Unlink TTLock Account</Text>
               </TouchableOpacity>
             </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   )
 }

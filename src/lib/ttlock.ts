@@ -14,6 +14,15 @@ export interface TTLockTokenInfo {
   expires_at: string
 }
 
+export interface TTLockItem {                                                                                                               
+  lockId: number                                                                                                                            
+  lockName: string                                                                                                                          
+  lockAlias?: string                                                                                                                        
+  lockMac: string                                                                                                                           
+  electricQuantity: number                                                                                                                  
+  keyboardPwdVersion: number                                                                                                
+}
+
 // 1. Check if the currently logged in user has an active TTLock token
 export const checkTTLockConnection = async (): Promise<TTLockTokenInfo | null> => {
   const { data, error } = await supabase
@@ -96,3 +105,22 @@ export const generateTTLockPasscode = async (params: PasscodeParams) => {
 
   return data
 }
+
+export const getUserLocks = async (): Promise<TTLockItem[]> => {                                                                            
+  const { data, error } = await supabase.functions.invoke('ttlock-api', {                                                                   
+    body: { action: 'getLocks' },
+  })       
+                                                                                                                                                                                                                     
+  if (error) {                                                                                                                              
+    throw new Error(error.message || 'Failed to fetch locks')                                                                               
+  }                                                                                                                                         
+                                                                                                                                                
+  // Parse if returned as a string                                                                                                          
+  const parsedData = typeof data === 'string' ? JSON.parse(data) : data                                                                     
+                                                                                                                                            
+  if (parsedData?.error || (parsedData?.errcode && parsedData.errcode !== 0)) {                                                             
+    throw new Error(parsedData?.errmsg || parsedData?.error || 'Failed to fetch locks')                                                     
+  }   
+                                                                                                                                                                                                                                                                        
+  return parsedData?.list || []                                                                                                                    
+} 
